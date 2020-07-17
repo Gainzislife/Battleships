@@ -1,3 +1,27 @@
+class GameBoard(object):
+    def __init__(self, battleships, boardWidth, boardHeight):
+        self.battleships = battleships
+        self.shots = []
+        self.boardWidth = boardWidth
+        self.boardHeight = boardHeight
+
+    # Update battleship with any hits
+    # Save a hit or miss
+    def takeShot(self, shotLocation):
+        isHit = False
+        for b in self.battleships:
+            index = b.bodyIndex(shotLocation)
+            if index is not None:
+                isHit = True
+                b.hits[index] = True
+                break
+        self.shots.append(Shot(shotLocation, isHit))
+
+class Shot(object):
+    def __init__(self, location, isHit):
+        self.location = location
+        self.isHit = isHit
+
 class Battleship(object):
 
     @staticmethod
@@ -18,6 +42,13 @@ class Battleship(object):
 
     def __init__(self, body):
         self.body = body
+        self.hits = [False] * len(body)
+
+    def bodyIndex(self, location):
+        try:
+            return self.body.index(location)
+        except ValueError:
+            return None
 
 # Draw the board
 def renderBoard(boardWidth, boardHeight, shots):
@@ -74,10 +105,19 @@ if __name__ == "__main__":
         Battleship.build((2,3), 3, "E")
     ]
 
-    for b in battleships:
-        print(b.body)
+    gameBoard = GameBoard(battleships, 10, 10)
+    shots = [(1,1), (0,0), (5,7)]
+    for sh in shots:
+        gameBoard.takeShot(sh)
 
-    renderBattleships(10, 10, battleships)
+    for sh in gameBoard.shots:
+        print(sh.location)
+        print(sh.isHit)
+        print("========")
+    for b in gameBoard.battleships:
+        print(b.body)
+        print(b.hits)
+        print("========")
 
     exit(0)
 
