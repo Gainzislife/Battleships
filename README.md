@@ -1,2 +1,2 @@
 # Battleships
- Console game to imitate the Battleship boardgame
+ Console game to imitate the Battleship board game
