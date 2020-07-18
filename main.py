@@ -1,3 +1,5 @@
+import copy
+
 class GameBoard(object):
     def __init__(self, battleships, width, height):
         self.battleships = battleships
@@ -15,6 +17,9 @@ class GameBoard(object):
                 isHit = True
                 b.hits[index] = True
                 print("______HIT______")
+                break
+            else:
+                print("______MISS_____")
                 break
         self.shots.append(Shot(shotLocation, isHit))
 
@@ -94,24 +99,39 @@ def render(gameBoard, showBattleships = False):
 
 # Main
 if __name__ == "__main__":
+
     battleships = [
         Battleship.build((1,1), 2, "N"),
-        Battleship.build((5,8), 4, "N"),
-        Battleship.build((2,3), 3, "E")
+        # Battleship.build((5,8), 4, "N"),
+        # Battleship.build((2,3), 3, "E")
     ]
 
-    gameBoard = GameBoard(battleships, 10, 10)
+    gameBoards = [
+        GameBoard(battleships, 10, 10),
+        GameBoard(copy.deepcopy(battleships), 10, 10)
+    ]
+
+    # Player 1 == 0 & player 2 == 1
+    attackingPlayer = 0
 
     while True:
+        defendingPlayer = (attackingPlayer + 1) % 2
+
+        defendingBoard = gameBoards[defendingPlayer]
+
+        print("\nPLAYER " + str(attackingPlayer + 1))
         inp = input("Where do you want to shoot?\n")
         # TODO: input validation
         xStr, yStr = inp.split(",")
         x = int(xStr)
         y = int(yStr)
 
-        gameBoard.takeShot((x,y))
-        render(gameBoard)
+        defendingBoard.takeShot((x,y))
+        render(defendingBoard)
 
-        if gameBoard.isGameOver():
-            print("YOU WIN!")
+        if defendingBoard.isGameOver():
+            print("PLAYER " + str(attackingPlayer + 1) + " WINS!")
             break
+        
+        # Attacker now becomes defender
+        attackingPlayer = defendingPlayer
