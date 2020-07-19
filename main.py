@@ -1,4 +1,6 @@
 import copy
+import random
+
 
 class GameBoard(object):
     def __init__(self, battleships, width, height):
@@ -26,10 +28,12 @@ class GameBoard(object):
     def isGameOver(self):
         return all([b.isDestroyed() for b in self.battleships])
 
+
 class Shot(object):
     def __init__(self, location, isHit):
         self.location = location
         self.isHit = isHit
+
 
 class Battleship(object):
 
@@ -47,10 +51,14 @@ class Battleship(object):
                 el = (head[0] - i, head[1])
 
             body.append(el)
-        return Battleship(body)
+        return Battleship(body, direction)
 
-    def __init__(self, body):
+    # TODO: which param actually needed
+    def __init__(self, body, direction):
         self.body = body
+        self.head = head
+        self.length = length
+        self.direction = direction
         self.hits = [False] * len(body)
 
     def bodyIndex(self, location):
@@ -62,7 +70,14 @@ class Battleship(object):
     def isDestroyed(self):
         return all(self.hits)
 
-def render(gameBoard, showBattleships = False):
+class Player(object):
+
+    def __init__(self, number, shotFunction):
+        self.number = number
+        self.shotFunction = shotFunction
+
+# Draw the board
+def render(gameBoard, showBattleships=False):
     # How the top and bottom border looks
     border = " +" + "-" * gameBoard.width + "+"
     print("  0123456789")
@@ -77,8 +92,25 @@ def render(gameBoard, showBattleships = False):
     if showBattleships:
         # Add the battleships to the board
         for b in gameBoard.battleships:
-            for x, y in b.body:
-                board[x][y] = "0"
+            for i, (x, y) in enumerate(b.body):
+                if b.direction == "N":
+                    chs = ("v", "|", "^")
+                elif b.direction == "S":
+                    chs = ("^", "|", "v")
+                elif b.direction == "E":
+                    chs = ("<", "-", ">")
+                elif b.direction == "W":
+                    chs = (">", "-", "<")
+                else:
+                    raise "Unknown direction"
+
+                if i == 0:
+                    ch = chs[0]
+                elif i == len(b.body) - 1:
+                    ch = chs[2]
+                else:
+                    ch = chs[1]
+                board[x][y] = ch
 
     # Add the shots to the board
     for sh in gameBoard.shots:
@@ -97,13 +129,30 @@ def render(gameBoard, showBattleships = False):
 
     print(border)
 
+
+def getRandomComputerShot(gameBoard):
+    x = random.randint(0, gameBoard.width - 1)
+    y = random.randint(0, gameBoard.height - 1)
+    return (x, y)
+
+
+def getHumanShot(gameBoard):
+    inp = input("Where do you want to shoot?\n")
+    # TODO: input validation
+    xStr, yStr = inp.split(",")
+    x = int(xStr)
+    y = int(yStr)
+
+    return (x, y)
+
+
 # Main
 if __name__ == "__main__":
 
     battleships = [
-        Battleship.build((1,1), 2, "N"),
-        # Battleship.build((5,8), 4, "N"),
-        # Battleship.build((2,3), 3, "E")
+        Battleship.build((1, 1), 2, "N"),
+        Battleship.build((5,8), 5, "N"),
+        Battleship.build((2,3), 4, "E")
     ]
 
     gameBoards = [
@@ -112,26 +161,28 @@ if __name__ == "__main__":
     ]
 
     # Player 1 == 0 & player 2 == 1
-    attackingPlayer = 0
+    attackingIndex = 0
+
+    players = [
+        Player(1, getHumanShot),
+        Player(2, getRandomComputerShot)
+    ]
 
     while True:
-        defendingPlayer = (attackingPlayer + 1) % 2
+        defendingIndex = (attackingIndex + 1) % 2
 
-        defendingBoard = gameBoards[defendingPlayer]
+        defendingBoard = gameBoards[defendingIndex]
+        attackingPlayer = players[attackingIndex]
 
-        print("\nPLAYER " + str(attackingPlayer + 1))
-        inp = input("Where do you want to shoot?\n")
-        # TODO: input validation
-        xStr, yStr = inp.split(",")
-        x = int(xStr)
-        y = int(yStr)
+        print("\nPLAYER " + str(attackingPlayer.number))
+        shotLocation = attackingPlayer.shotFunction(defendingBoard)
 
-        defendingBoard.takeShot((x,y))
-        render(defendingBoard)
+        defendingBoard.takeShot(shotLocation)
+        render(defendingBoard, True)
 
         if defendingBoard.isGameOver():
-            print("PLAYER " + str(attackingPlayer + 1) + " WINS!")
+            print("PLAYER " + str(attackingPlayer.number) + " WINS!")
             break
-        
+
         # Attacker now becomes defender
-        attackingPlayer = defendingPlayer
+        attackingIndex = defendingIndex
