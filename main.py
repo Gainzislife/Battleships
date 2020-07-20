@@ -1,7 +1,6 @@
 import copy
 import random
 
-
 class GameBoard(object):
     def __init__(self, battleships, width, height):
         self.battleships = battleships
@@ -12,18 +11,18 @@ class GameBoard(object):
     # Update battleship with any hits
     # Save a hit or miss
     def takeShot(self, shotLocation):
+        hitBattleship = None
         isHit = False
         for b in self.battleships:
             index = b.bodyIndex(shotLocation)
             if index is not None:
                 isHit = True
                 b.hits[index] = True
-                print("______HIT______")
-                break
-            else:
-                print("______MISS_____")
+                hitBattleship = b
                 break
         self.shots.append(Shot(shotLocation, isHit))
+
+        return hitBattleship
 
     def isGameOver(self):
         return all([b.isDestroyed() for b in self.battleships])
@@ -56,8 +55,6 @@ class Battleship(object):
     # TODO: which param actually needed
     def __init__(self, body, direction):
         self.body = body
-        self.head = head
-        self.length = length
         self.direction = direction
         self.hits = [False] * len(body)
 
@@ -77,7 +74,7 @@ class Player(object):
         self.shotFunction = shotFunction
 
 # Draw the board
-def render(gameBoard, showBattleships=False):
+def renderBasic(gameBoard, showBattleships=False):
     # How the top and bottom border looks
     border = " +" + "-" * gameBoard.width + "+"
     print("  0123456789")
@@ -129,6 +126,20 @@ def render(gameBoard, showBattleships=False):
 
     print(border)
 
+# type, metadata (player, ...)
+def announce_en(eventType, metadata={}):
+    if eventType == "game_over":
+        print("PLAYER " + str(metadata['player']) + " WINS!")
+    elif eventType == "new_turn":
+        print("\nPLAYER " + str(metadata['player']) + "'s TURN")
+    elif eventType == "miss":
+        print("\nPLAYER " + str(metadata['player']) + " MISSED...")
+    elif eventType == "battleship_destroyed":
+        print("\nPLAYER " + str(metadata['player']) + " DESTROYED a battleship!!!")
+    elif eventType == "battleship_hit":
+        print("\nPLAYER " + str(metadata['player']) + " HIT!!")
+    else:
+        print("Unknown event type: " + eventType)
 
 def getRandomComputerShot(gameBoard):
     x = random.randint(0, gameBoard.width - 1)
@@ -145,14 +156,11 @@ def getHumanShot(gameBoard):
 
     return (x, y)
 
-
-# Main
-if __name__ == "__main__":
-
+def run(announce_f, render_f):
     battleships = [
         Battleship.build((1, 1), 2, "N"),
-        Battleship.build((5,8), 5, "N"),
-        Battleship.build((2,3), 4, "E")
+        # Battleship.build((5,8), 5, "N"),
+        # Battleship.build((2,3), 4, "E")
     ]
 
     gameBoards = [
@@ -174,15 +182,27 @@ if __name__ == "__main__":
         defendingBoard = gameBoards[defendingIndex]
         attackingPlayer = players[attackingIndex]
 
-        print("\nPLAYER " + str(attackingPlayer.number))
+        announce_f("new_turn", {"player": attackingPlayer.number})
         shotLocation = attackingPlayer.shotFunction(defendingBoard)
 
-        defendingBoard.takeShot(shotLocation)
-        render(defendingBoard, True)
+        hitBattleship = defendingBoard.takeShot(shotLocation)
+        if hitBattleship is None:
+            announce_f("miss", {"player": attackingPlayer.number})
+        else:
+            if hitBattleship.isDestroyed():
+                announce_f("battleship_destroyed", {"player": attackingPlayer.number})
+            else:
+                announce_f("battleship_hit", {"player": attackingPlayer.number})
+
+        render_f(defendingBoard)
 
         if defendingBoard.isGameOver():
-            print("PLAYER " + str(attackingPlayer.number) + " WINS!")
+            announce_f("game_over", {"player": attackingPlayer.number})
             break
 
         # Attacker now becomes defender
         attackingIndex = defendingIndex
+
+# Main
+if __name__ == "__main__":
+    run(announce_en, renderBasic)
