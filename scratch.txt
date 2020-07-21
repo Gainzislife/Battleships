@@ -1,6 +1,0 @@
-# TODO: Player selected ship positions
-^^ Player enters details in a textfile, read it in
-
-# TODO: Add different AI
-
-# TODO: different render functions
