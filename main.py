@@ -1,5 +1,6 @@
 import copy
 import random
+import time
 
 class GameBoard(object):
     def __init__(self, battleships, width, height):
@@ -126,7 +127,7 @@ def renderBasic(gameBoard, showBattleships=False):
 
     print(border)
 
-# type, metadata (player, ...)
+# Standard announcer
 def announce_en(eventType, metadata={}):
     if eventType == "game_over":
         print("PLAYER " + str(metadata['player']) + " WINS!")
@@ -146,6 +147,11 @@ def getRandomComputerShot(gameBoard):
     y = random.randint(0, gameBoard.height - 1)
     return (x, y)
 
+def sleepAI(sleepTime):
+    def f(gameBoard):
+        time.sleep(sleepTime)
+        return getRandomComputerShot(gameBoard)
+    return f
 
 def getHumanShot(gameBoard):
     inp = input("Where do you want to shoot?\n")
@@ -159,8 +165,8 @@ def getHumanShot(gameBoard):
 def run(announce_f, render_f):
     battleships = [
         Battleship.build((1, 1), 2, "N"),
-        # Battleship.build((5,8), 5, "N"),
-        # Battleship.build((2,3), 4, "E")
+        Battleship.build((5,8), 5, "N"),
+        Battleship.build((2,3), 4, "E")
     ]
 
     gameBoards = [
@@ -172,8 +178,8 @@ def run(announce_f, render_f):
     attackingIndex = 0
 
     players = [
-        Player(1, getHumanShot),
-        Player(2, getRandomComputerShot)
+        Player(1, sleepAI(2)),
+        Player(2, sleepAI(2))
     ]
 
     while True:
